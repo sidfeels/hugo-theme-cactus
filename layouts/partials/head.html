@@ -42,6 +42,73 @@
     {{ printf `<link href="%s" rel="%s" type="%s" title="%s" />` .Permalink .Rel .MediaType.Type $.Site.Title | safeHTML }}
   {{ end }}
   {{ end }}
+  
+  <!-- Mermaid Diagram Support -->
+  <script src="https://cdn.jsdelivr.net/npm/mermaid@10.6.1/dist/mermaid.min.js"></script>
+  <script>
+    // Initialize Mermaid with configuration
+    window.addEventListener('load', function() {
+      console.log('Window loaded, initializing Mermaid');
+      try {
+        mermaid.initialize({
+          startOnLoad: false, // We'll manually initialize diagrams
+          theme: '{{ if eq (.Scratch.Get "colortheme") "dark" }}dark{{ else }}default{{ end }}',
+          securityLevel: 'loose',
+          fontFamily: '"JetBrains Mono", monospace',
+          flowchart: {
+            htmlLabels: true,
+            curve: 'basis'
+          },
+          er: {
+            useMaxWidth: true
+          },
+          sequence: {
+            useMaxWidth: true
+          }
+        });
+        
+        // Find all mermaid diagrams and initialize them
+        document.querySelectorAll('.mermaid').forEach(function(element) {
+          console.log('Found mermaid element:', element.id);
+          try {
+            mermaid.init(undefined, element);
+          } catch (err) {
+            console.error('Error initializing diagram:', err);
+          }
+        });
+      } catch (error) {
+        console.error('Error in Mermaid initialization:', error);
+      }
+    });
+    
+    // Backup initialization in case the load event already fired
+    if (document.readyState === 'complete') {
+      console.log('Document already complete, initializing Mermaid immediately');
+      try {
+        mermaid.initialize({
+          startOnLoad: false,
+          theme: '{{ if eq (.Scratch.Get "colortheme") "dark" }}dark{{ else }}default{{ end }}',
+          securityLevel: 'loose',
+          fontFamily: '"JetBrains Mono", monospace'
+        });
+        
+        // Find all mermaid diagrams and initialize them
+        document.querySelectorAll('.mermaid').forEach(function(element) {
+          try {
+            mermaid.init(undefined, element);
+          } catch (err) {
+            console.error('Error initializing diagram:', err);
+          }
+        });
+      } catch (error) {
+        console.error('Error in Mermaid backup initialization:', error);
+      }
+    }
+  </script>
+  
+  <!-- Custom JavaScript -->
+  <script src="{{ "js/custom.js" | relURL }}"></script>
+  
   <!-- Remove Google Analytics references -->
   {{ if .Site.GoogleAnalytics }}
   {{ if .Site.Params.googleAnalyticsAsync }}

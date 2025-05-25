@@ -38,7 +38,6 @@
   </section>
 
   <section id="writing">
-    <span class="h1"><a href="{{ .Site.Params.mainSection | absURL }}">{{ .Site.Params.mainSectionTitle | default "Writings" }}</a></span>
     {{ if (and (and (isset .Site.Params "tagsoverview") (eq .Site.Params.tagsOverview true)) (gt (len .Site.Taxonomies.tags) 0)) }}
     <span class="h2">Topics</span>
     <span class="widget tagcloud">
@@ -58,32 +57,61 @@
     {{ end }}
     {{ $dataFormat := .Site.Params.dateFormat | default "2006-01-02" }}
     {{ $mainPosts := (sort ( where site.RegularPages "Type" "in" site.Params.mainSections ) "Date" "desc") }}
-    {{ if $showAllPostsOnHomePage }}
-    <ul class="post-list">
-      {{ range (.Paginate $mainPosts).Pages }}
-        <li class="post-item">
-          <div class="meta"><time datetime="{{ time .Date }}" itemprop="datePublished">{{ .Date.Format $dataFormat }}</time></div>
-          <span><a href="{{ .Permalink }}">{{ if .Title }} {{- .Title -}} {{ else }} {{- print "Untitled" -}}{{ end }}</a></span>
-        </li>
+    
+    <div id="archive">
+      {{ if $showAllPostsOnHomePage }}
+        <!-- Group posts by year using Scratch -->
+        {{ $.Scratch.Set "years" slice }}
+        {{ range (.Paginate $mainPosts).Pages }}
+          {{ $year := .Date.Format "2006" }}
+          {{ if not (in ($.Scratch.Get "years") $year) }}
+            {{ $.Scratch.Set "years" ($.Scratch.Get "years" | append $year) }}
+          {{ end }}
+          {{ $.Scratch.SetInMap (printf "year%s" $year) .RelPermalink . }}
+        {{ end }}
+        
+        <!-- Display posts grouped by year -->
+        {{ range sort ($.Scratch.Get "years") "value" "desc" }}
+          {{ $year := . }}
+          <h2 class="archive-year">{{ $year }}</h2>
+          <ul class="post-list">
+            {{ range $.Scratch.GetSortedMapValues (printf "year%s" $year) }}
+              <li class="post-item">
+                <div class="meta"><time datetime="{{ time .Date }}" itemprop="datePublished">{{ .Date.Format $dataFormat }}</time></div>
+                <span><a href="{{ .Permalink }}">{{ if .Title }} {{- .Title -}} {{ else }} {{- print "Untitled" -}}{{ end }}</a></span>
+              </li>
+            {{ end }}
+          </ul>
+        {{ end }}
+        
+        {{ partial "pagination.html" . }}
+      {{ else }}
+        <!-- Group limited posts by year using Scratch -->
+        {{ $limitedPosts := first ($.Scratch.Get "count" | default 5) $mainPosts }}
+        {{ $.Scratch.Set "years" slice }}
+        {{ range $limitedPosts }}
+          {{ $year := .Date.Format "2006" }}
+          {{ if not (in ($.Scratch.Get "years") $year) }}
+            {{ $.Scratch.Set "years" ($.Scratch.Get "years" | append $year) }}
+          {{ end }}
+          {{ $.Scratch.SetInMap (printf "year%s" $year) .RelPermalink . }}
+        {{ end }}
+        
+        <!-- Display limited posts grouped by year -->
+        {{ range sort ($.Scratch.Get "years") "value" "desc" }}
+          {{ $year := . }}
+          <h2 class="archive-year">{{ $year }}</h2>
+          <ul class="post-list">
+            {{ range $.Scratch.GetSortedMapValues (printf "year%s" $year) }}
+              <li class="post-item">
+                <div class="meta"><time datetime="{{ time .Date }}" itemprop="datePublished">{{ .Date.Format $dataFormat }}</time></div>
+                <span><a href="{{ .Permalink }}">{{ if .Title }} {{- .Title -}} {{ else }} {{- print "Untitled" -}}{{ end }}</a></span>
+              </li>
+            {{ end }}
+          </ul>
+        {{ end }}
       {{ end }}
-    </ul>
-
-    {{ partial "pagination.html" . }}
-
-    {{ else }}
-    <ul class="post-list">
-      {{ .Scratch.Set "count" 5 }}
-      {{ if isset .Site.Params "postsonhomepage" }}
-        {{ .Scratch.Set "count" .Site.Params.postsOnHomePage }}
-      {{ end }}
-      {{ range (first (.Scratch.Get "count") $mainPosts) }}
-        <li class="post-item">
-          <div class="meta"><time datetime="{{ time .Date }}" itemprop="datePublished">{{ .Date.Format $dataFormat }}</time></div>
-          <span><a href="{{ .Permalink }}">{{ if .Title }} {{- .Title -}} {{ else }} {{- print "Untitled" -}}{{ end }}</a></span>
-        </li>
-      {{ end }}
-    </ul>
-    {{ end }}
+    </div>
   </section>
 
   {{ $showProjectsList := false }}
